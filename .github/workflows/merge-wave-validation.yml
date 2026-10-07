@@ -5,6 +5,7 @@ on:
     paths: [.github/workflows/merge-wave-validation.yml]
 permissions:
   contents: read
+  actions: read
 env:
   BASE_SHA: 07429cf69631f1d3e560b3fee412c7036db3fcf3
   HEAD_SHA: d828285c6bd0035d69c6cb723517b2eedfd14807
@@ -33,6 +34,14 @@ jobs:
         run: |
           pnpm --dir sdk/typescript install --frozen-lockfile
           pnpm --dir plugins/codex-security/mcp-app install --frozen-lockfile
+      - name: Obtain the verified native payload for unchanged pinned sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git diff --exit-code "$BASE_SHA" -- plugins/codex-security/native
+          gh run download 37606912953 --repo openai/codex-security --name native-universal-07429cf69631f1d3e560b3fee412c7036db3fcf3 --dir plugins/codex-security/native/prebuilt
+          test -f plugins/codex-security/native/prebuilt/COPYRIGHT-library.html
+          echo 'Native payload comes from successful upstream main run 37606912953 at the exact pinned base.'
       - name: Build the real bundled plugin
         run: pnpm --dir sdk/typescript run build:plugin
       - name: Validate the retry lifecycle on the real runtime
